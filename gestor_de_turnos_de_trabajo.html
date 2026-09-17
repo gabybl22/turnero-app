@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor de Turnos de Trabajo</title>
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TurneroPro">
+  <meta name="theme-color" content="#172554">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3652/3652191.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f4ff',
+              100: '#e0e9ff',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              800: '#1e3a8a',
+              900: '#172554',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom scrollbar and animations */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .badge-shadow {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased bg-slate-100 font-sans selection:bg-brand-600 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-brand-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- App Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg font-bold text-xl">
+            <i class="fa-solid me-0.5 fa-calendar-days"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight tracking-tight">TurneroPro</h1>
+            <p class="text-xs text-brand-100 opacity-80">Control de Turnos y Cómputo Horario</p>
+          </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="btnInstallApp" onclick="triggerPWAInstall()" class="hidden px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow transition flex items-center space-x-1.5 animate-pulse">
+            <i class="fa-solid fa-download"></i>
+            <span class="hidden sm:inline">Instalar App</span>
+          </button>
+
+          <button id="btnOpenScanner" onclick="openScannerModal()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-camera text-base"></i>
+            <span class="hidden xs:inline">Escanear Foto</span>
+          </button>
+          
+          <button onclick="openCatalogModal()" class="px-3 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-medium rounded-lg border border-slate-700 transition flex items-center space-x-1.5" title="Ver catálogo de turnos">
+            <i class="fa-solid fa-list-check"></i>
+            <span class="hidden sm:inline">Catálogo</span>
+          </button>
+
+          <button onclick="openExportModal()" class="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Exportar / Importar datos">
+            <i class="fa-solid fa-file-export"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+
+    <!-- Month Navigation & Top Controls -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <!-- Current Month Switcher -->
+      <div class="flex items-center space-x-3">
+        <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 flex items-center justify-center transition active:scale-95 shadow-sm">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        
+        <div class="text-center min-w-[180px]">
+          <h2 id="currentMonthYear" class="text-xl sm:text-2xl font-bold text-slate-900 capitalize tracking-tight">Septiembre 2026</h2>
+        </div>
+
+        <button onclick="changeMonth(1)" class="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 flex items-center justify-center transition active:scale-95 shadow-sm">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        
+        <button onclick="goToCurrentMonth()" class="px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition border border-brand-100">
+          Hoy
+        </button>
+      </div>
+
+      <!-- Quick Action Indicators -->
+      <div class="flex items-center space-x-2 text-xs text-slate-500 overflow-x-auto max-w-full pb-1 sm:pb-0">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span> Normales
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-semibold border border-rose-200 whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-rose-600 mr-1.5"></span> HE (Extras)
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 font-semibold border border-purple-200 whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-purple-600 mr-1.5"></span> HV (Voluntarias)
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-medium whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span> Vacaciones (V)
+        </span>
+      </div>
+    </div>
+
+    <!-- Summary Stats Bar -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <!-- Total Hours Card -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Horas Totales</p>
+          <p id="statTotalHours" class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">0 h</p>
+        </div>
+      </div>
+
+      <!-- Worked Days Card -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Días Trab.</p>
+          <p id="statWorkedDays" class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">0 días</p>
+        </div>
+      </div>
+
+      <!-- Vacation Days Card -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <i class="fa-solid fa-umbrella-beach"></i>
+        </div>
+        <div>
+          <p class="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wider">Vacaciones</p>
+          <p id="statVacationDays" class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">0 días</p>
+        </div>
+      </div>
+
+      <!-- Extra Hours Card (HE) -->
+      <div class="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/30 shadow-sm flex items-center space-x-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <p class="text-[10px] sm:text-xs font-semibold text-rose-800 uppercase tracking-wider">Horas Extras (HE)</p>
+          <p id="statExtraHoursHE" class="text-lg sm:text-xl font-bold text-rose-900 mt-0.5">0 h</p>
+        </div>
+      </div>
+
+      <!-- Voluntary Hours Card (HV) -->
+      <div class="bg-white p-4 rounded-xl border border-purple-200 bg-purple-50/30 shadow-sm flex items-center space-x-3 col-span-2 lg:col-span-1">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <i class="fa-solid fa-hand-holding-heart"></i>
+        </div>
+        <div>
+          <p class="text-[10px] sm:text-xs font-semibold text-purple-800 uppercase tracking-wider">Voluntarias (HV)</p>
+          <p id="statExtraHoursHV" class="text-lg sm:text-xl font-bold text-purple-900 mt-0.5">0 h</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Grid Section -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <!-- Weekday Headers -->
+      <div class="grid grid-cols-7 bg-slate-50/80 border-b border-slate-200 text-center py-2.5 font-semibold text-xs text-slate-500 uppercase tracking-wider">
+        <div class="text-slate-700">lun.</div>
+        <div class="text-slate-700">mar.</div>
+        <div class="text-slate-700">mié.</div>
+        <div class="text-slate-700">jue.</div>
+        <div class="text-slate-700">vie.</div>
+        <div class="text-slate-700 text-indigo-600">sáb.</div>
+        <div class="text-slate-700 text-indigo-600">dom.</div>
+      </div>
+
+      <!-- Dynamic Days Container -->
+      <div id="calendarGrid" class="grid grid-cols-7 auto-rows-fr bg-slate-200 gap-[1px]">
+        <!-- Calendar day cards will be injected by JavaScript -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: AI Image Scanner -->
+  <div id="modalScanner" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-100 overflow-hidden my-auto transform transition-all">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-brand-900 to-indigo-900 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-lg"></i>
+          <h3 class="font-bold text-base sm:text-lg">Lector de Calendario con IA</h3>
+        </div>
+        <button onclick="closeScannerModal()" class="text-slate-300 hover:text-white transition w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 sm:p-6 space-y-4">
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          Sube una captura de pantalla o foto de tu turnero oficial (como la de septiembre). La Inteligencia Artificial leerá los días, turnos, imaginarias, horas extras y vacaciones automáticamente.
+        </p>
+
+        <!-- Dropzone / File Picker -->
+        <div id="dropzone" onclick="document.getElementById('imageFileInput').click()" class="border-2 border-dashed border-slate-300 hover:border-brand-600 bg-slate-50 hover:bg-brand-50/50 rounded-xl p-6 text-center cursor-pointer transition group">
+          <input type="file" id="imageFileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+          <div id="uploadPrompt" class="space-y-2">
+            <div class="w-12 h-12 rounded-full bg-brand-100 text-brand-600 mx-auto flex items-center justify-center group-hover:scale-110 transition duration-200">
+              <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-700">Haz clic o arrastra la imagen aquí</p>
+            <p class="text-xs text-slate-400">Formatos soportados: PNG, JPG, JPEG, WEBP</p>
+          </div>
+          <div id="imagePreviewContainer" class="hidden flex flex-col items-center">
+            <img id="imagePreview" class="max-h-56 rounded-lg shadow-sm border border-slate-200 object-contain mb-2" src="" alt="Vista previa">
+            <span class="text-xs text-slate-500 font-medium" id="fileNameText">imagen.jpg</span>
+          </div>
+        </div>
+
+        <!-- AI Progress Indicator -->
+        <div id="aiLoading" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 text-center space-y-3">
+          <div class="inline-block animate-spin text-brand-600 text-2xl">
+            <i class="fa-solid fa-circle-notch"></i>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-800">Analizando el calendario con IA...</p>
+            <p class="text-xs text-slate-500">Detectando turnos, vacaciones y horas extras</p>
+          </div>
+        </div>
+
+        <!-- Scanning Results Review Table -->
+        <div id="scanResultContainer" class="hidden space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <span class="text-sm font-bold text-slate-800" id="scanDetectedMonth">Mes detectado: -</span>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full" id="scanCountBadge">0 días</span>
+          </div>
+          <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 text-xs">
+            <table class="w-full text-left">
+              <thead class="bg-slate-100 sticky top-0 font-semibold text-slate-600">
+                <tr>
+                  <th class="p-2">Día</th>
+                  <th class="p-2">Código Turno</th>
+                  <th class="p-2">Tipo / Duración</th>
+                  <th class="p-2">Extra</th>
+                </tr>
+              </thead>
+              <tbody id="scanResultsBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Status / Error Messages -->
+        <div id="scanMessage" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end space-x-3">
+        <button onclick="closeScannerModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-xs sm:text-sm font-medium hover:bg-slate-100 transition">
+          Cancelar
+        </button>
+        <button id="btnStartScan" onclick="processImageWithGemini()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center space-x-2" disabled>
+          <i class="fa-solid fa-bolt"></i>
+          <span>Analizar Imagen</span>
+        </button>
+        <button id="btnApplyScan" onclick="applyScannedShifts()" class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition flex items-center space-x-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Guardar en Calendario</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Day Shift -->
+  <div id="modalEditDay" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden transform transition-all">
+      <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div>
+          <h3 id="editModalTitle" class="font-bold text-base sm:text-lg">Editar Día</h3>
+          <p id="editModalSubtitle" class="text-xs text-slate-400">Selecciona el tipo de turno o modalidad</p>
+        </div>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-white transition w-8 h-8 rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <!-- Shift Category / Mode Selection (Normal, HE, HV) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Modalidad del Turno</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="shiftCategory" value="none" id="catNormal" class="peer hidden" checked>
+              <div class="p-2.5 rounded-xl border border-slate-200 text-center font-bold text-xs peer-checked:border-slate-800 peer-checked:bg-slate-900 peer-checked:text-white transition shadow-sm">
+                Normal
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="shiftCategory" value="HE" id="catHE" class="peer hidden">
+              <div class="p-2.5 rounded-xl border border-rose-300 bg-rose-50/50 text-center font-bold text-xs text-rose-800 peer-checked:border-rose-600 peer-checked:bg-rose-600 peer-checked:text-white transition shadow-sm flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-bolt text-[10px]"></i>
+                <span>HE (Extra)</span>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="shiftCategory" value="HV" id="catHV" class="peer hidden">
+              <div class="p-2.5 rounded-xl border border-purple-300 bg-purple-50/50 text-center font-bold text-xs text-purple-800 peer-checked:border-purple-600 peer-checked:bg-purple-600 peer-checked:text-white transition shadow-sm flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-hand-holding-heart text-[10px]"></i>
+                <span>HV (Voluntaria)</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quick Select Shift Code Grid -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Tipos de Turno Rápidos</label>
+          <div id="shiftButtonsGrid" class="grid grid-cols-3 gap-2">
+            <!-- Dynamic shift code selection buttons -->
+          </div>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- Custom Code or Fine Tuning -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Código de Turno (ej. Mc, Tc, N, V...)</label>
+            <input type="text" id="customShiftCode" placeholder="Ej: Mc, Tc, iN, V..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-600 focus:outline-none uppercase font-bold">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Duración en Horas Computables</label>
+            <input type="number" step="0.001" id="customShiftHours" placeholder="7.795" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-600 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Notas / Observaciones</label>
+            <input type="text" id="shiftNotes" placeholder="Añadir nota opcional..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-600 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="clearCurrentDayShift()" class="px-3.5 py-2 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold transition border border-red-200">
+          <i class="fa-solid fa-trash-can mr-1"></i> Borrar
+        </button>
+        <div class="flex items-center space-x-2">
+          <button onclick="closeEditModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-xs font-medium hover:bg-slate-100 transition">
+            Cancelar
+          </button>
+          <button onclick="saveDayShift()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Export / Import & Backup Options -->
+  <div id="modalExport" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden transform transition-all">
+      <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-export text-indigo-400 text-lg"></i>
+          <h3 class="font-bold text-base sm:text-lg">Exportar e Importar Datos</h3>
+        </div>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-white transition w-8 h-8 rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs sm:text-sm">
+        <p class="text-slate-600">
+          Guarda tus turnos en distintos formatos para verlos en tu hoja de cálculo, sincronizarlos con tu calendario del móvil o hacer copias de seguridad.
+        </p>
+
+        <div class="space-y-2">
+          <!-- Export JSON Backup -->
+          <button onclick="exportDataJSON()" class="w-full p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between transition group">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-database"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-slate-800">Copia de Seguridad (JSON)</p>
+                <p class="text-[11px] text-slate-500">Formato interno para respaldar y restaurar</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-download text-slate-400 group-hover:text-slate-700 transition"></i>
+          </button>
+
+          <!-- Export Excel CSV -->
+          <button onclick="exportDataCSV()" class="w-full p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between transition group">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-file-excel"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-slate-800">Excel / Hoja de Cómputo (CSV)</p>
+                <p class="text-[11px] text-slate-500">Resumen con fechas, tipos de turno y horas</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-file-csv text-slate-400 group-hover:text-slate-700 transition"></i>
+          </button>
+
+          <!-- Export iCalendar ICS -->
+          <button onclick="exportDataICS()" class="w-full p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between transition group">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-calendar-plus"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-slate-800">Calendario Móvil (iCal / .ics)</p>
+                <p class="text-[11px] text-slate-500">Importa en Google Calendar o Apple Calendar</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 group-hover:text-slate-700 transition"></i>
+          </button>
+        </div>
+
+        <hr class="border-slate-200 my-3">
+
+        <!-- Import JSON Section -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Restaurar Copia de Seguridad</label>
+          <div class="flex items-center space-x-2">
+            <input type="file" id="importJsonInput" accept=".json" class="text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+            <button onclick="importDataJSON()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-lg transition whitespace-nowrap">
+              Cargar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end">
+        <button onclick="closeExportModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs rounded-lg transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Install Instructions for iOS/Android -->
+  <div id="modalInstallInfo" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-100 overflow-hidden transform transition-all p-5 space-y-4">
+      <div class="flex items-center space-x-3 text-brand-900">
+        <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-base">Instalar en tu Móvil</h3>
+          <p class="text-xs text-slate-500">Úsala como una App nativa</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <p class="font-bold text-slate-800">En iPhone (Safari):</p>
+        <p>1. Pulsa el botón <strong>Compartir</strong> (<i class="fa-solid fa-arrow-up-from-bracket"></i>) en la barra inferior.</p>
+        <p>2. Selecciona <strong>"Añadir a la pantalla de inicio"</strong>.</p>
+        
+        <hr class="border-slate-200">
+
+        <p class="font-bold text-slate-800">En Android (Chrome):</p>
+        <p>1. Pulsa los <strong>tres puntos</strong> (<i class="fa-solid fa-ellipsis-vertical"></i>) de la esquina superior.</p>
+        <p>2. Elige <strong>"Instalar aplicación"</strong> o <strong>"Añadir a la pantalla principal"</strong>.</p>
+      </div>
+
+      <button onclick="document.getElementById('modalInstallInfo').classList.add('hidden')" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg transition">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Turnero Master Data Definitions */
+    const SHIFT_TYPES = {
+      'Mc': { name: 'Mañana corta', hours: 7.795, badgeBg: '#8cc63f', textColor: '#ffffff' },
+      'Tc': { name: 'Tarde corta', hours: 7.795, badgeBg: '#a6ce39', textColor: '#ffffff' },
+      'ML': { name: 'Mañana larga', hours: 8.545, badgeBg: '#7ac143', textColor: '#ffffff' },
+      'Ml': { name: 'Mañana larga', hours: 8.545, badgeBg: '#7ac143', textColor: '#ffffff' },
+      'TL': { name: 'Tarde larga', hours: 8.795, badgeBg: '#39b54a', textColor: '#ffffff' },
+      'Tl': { name: 'Tarde larga', hours: 8.795, badgeBg: '#39b54a', textColor: '#ffffff' },
+      'N': { name: 'Noche', hours: 9.295, badgeBg: '#662d91', textColor: '#ffffff' },
+      'iN': { name: 'Imaginaria noche', hours: 10.295, badgeBg: '#92278f', textColor: '#ffffff' },
+      'iMc': { name: 'Imaginaria Mc', hours: 7.795, badgeBg: '#9b51e0', textColor: '#ffffff' },
+      'iTc': { name: 'Imaginaria Tc', hours: 7.795, badgeBg: '#9b51e0', textColor: '#ffffff' },
+      'iML': { name: 'Imaginaria ML', hours: 8.545, badgeBg: '#800080', textColor: '#ffffff' },
+      'iMl': { name: 'Imaginaria ML', hours: 8.545, badgeBg: '#800080', textColor: '#ffffff' },
+      'iMI': { name: 'Imaginaria ML', hours: 8.545, badgeBg: '#800080', textColor: '#ffffff' },
+      'iTL': { name: 'Imaginaria TL', hours: 8.795, badgeBg: '#800080', textColor: '#ffffff' },
+      'iTl': { name: 'Imaginaria TL', hours: 8.795, badgeBg: '#800080', textColor: '#ffffff' },
+      'V': { name: 'Vacaciones', hours: 7.795, badgeBg: '#f7931e', textColor: '#ffffff' },
+      'HEN': { name: 'Horas Extra Noche / Voluntarias', hours: 9.295, badgeBg: '#dc2626', textColor: '#ffffff' },
+      'HE': { name: 'Horas Extras', hours: 7.795, badgeBg: '#dc2626', textColor: '#ffffff' },
+      'MFCO2': { name: 'Mañana Formación / Especial', hours: 7.795, badgeBg: '#00a99d', textColor: '#ffffff' }
+    };
+
+    // Application state
+    let currentDate = new Date(2026, 8, 1); // Default Sept 2026
+    let calendarShifts = {}; // Format: "YYYY-MM-DD": { code: "Mc", hours: 7.795, extraType: "HE" | "HV" | "none", notes: "" }
+    let selectedDayForEdit = null;
+    let tempScannedData = null;
+    let deferredPwaPrompt = null;
+
+    // Load stored data from localStorage
+    function loadStoredData() {
+      try {
+        const data = localStorage.getItem('turnero_calendar_data');
+        if (data) {
+          calendarShifts = JSON.parse(data);
+          // Backwards compatibility migration (isExtra -> extraType)
+          Object.keys(calendarShifts).forEach(k => {
+            if (calendarShifts[k].isExtra && !calendarShifts[k].extraType) {
+              calendarShifts[k].extraType = 'HE';
+            } else if (!calendarShifts[k].extraType) {
+              calendarShifts[k].extraType = 'none';
+            }
+          });
+        } else {
+          // Initialize sample data matching September photo
+          calendarShifts = {
+            "2026-09-03": { code: "Mc", hours: 7.795, extraType: "none" },
+            "2026-09-04": { code: "Mc", hours: 7.795, extraType: "none" },
+            "2026-09-05": { code: "Tc", hours: 7.795, extraType: "none" },
+            "2026-09-06": { code: "Tc", hours: 7.795, extraType: "none" },
+            "2026-09-07": { code: "iN", hours: 10.295, extraType: "none" },
+            "2026-09-09": { code: "N", hours: 9.295, extraType: "HE" }, // HEN Extra
+            "2026-09-11": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-12": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-13": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-14": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-15": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-16": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-17": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-18": { code: "V", hours: 7.795, extraType: "none" },
+            "2026-09-19": { code: "Mc", hours: 7.795, extraType: "none" },
+            "2026-09-20": { code: "iMl", hours: 8.545, extraType: "none" },
+            "2026-09-21": { code: "Tc", hours: 7.795, extraType: "none" },
+            "2026-09-22": { code: "Tc", hours: 7.795, extraType: "none" },
+            "2026-09-23": { code: "Tc", hours: 7.795, extraType: "HV" },
+            "2026-09-27": { code: "Mc", hours: 7.795, extraType: "none" },
+            "2026-09-28": { code: "ML", hours: 8.545, extraType: "none" },
+            "2026-09-29": { code: "MFCO2", hours: 7.795, extraType: "none" },
+            "2026-09-30": { code: "Mc", hours: 7.795, extraType: "none" }
+          };
+          saveData();
+        }
+      } catch(e) {
+        console.error("Error loading localStorage", e);
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem('turnero_calendar_data', JSON.stringify(calendarShifts));
+      } catch(e) {
+        console.error("Error saving data", e);
+      }
+    }
+
+    // Helper formatters
+    const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    
+    function formatDateKey(year, month, day) {
+      const m = String(month + 1).padStart(2, '0');
+      const d = String(day).padStart(2, '0');
+      return `${year}-${m}-${d}`;
+    }
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
+
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const numDays = lastDayOfMonth.getDate();
+
+      let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+      if (startDayOfWeek === -1) startDayOfWeek = 6;
+
+      for (let i = 0; i < startDayOfWeek; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'bg-slate-50/60 min-h-[90px] sm:min-h-[110px] p-1.5 opacity-40';
+        grid.appendChild(emptyCell);
+      }
+
+      let monthlyTotalHours = 0;
+      let monthlyWorkedDays = 0;
+      let monthlyVacationDays = 0;
+      let monthlyExtraHoursHE = 0;
+      let monthlyExtraHoursHV = 0;
+
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      for (let day = 1; day <= numDays; day++) {
+        const dateKey = formatDateKey(year, month, day);
+        const shiftData = calendarShifts[dateKey];
+        const dayOfWeekIndex = new Date(year, month, day).getDay();
+        const isWeekend = (dayOfWeekIndex === 0 || dayOfWeekIndex === 6);
+
+        const dayCell = document.createElement('div');
+        
+        let customBorderClass = '';
+        if (shiftData && shiftData.extraType === 'HE') {
+          customBorderClass = 'ring-1 ring-rose-400 bg-rose-50/20';
+        } else if (shiftData && shiftData.extraType === 'HV') {
+          customBorderClass = 'ring-1 ring-purple-400 bg-purple-50/20';
+        }
+
+        dayCell.className = `min-h-[95px] sm:min-h-[115px] p-1.5 bg-white relative flex flex-col justify-between hover:bg-slate-50 transition cursor-pointer group ${customBorderClass} ${todayStr === dateKey ? 'ring-2 ring-brand-600 ring-inset z-10' : ''}`;
+        dayCell.onclick = () => openEditModal(dateKey, day);
+
+        let dayHeaderHtml = `
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs sm:text-sm font-bold ${isWeekend ? 'text-indigo-600' : 'text-slate-700'}">${day}</span>
+        `;
+        
+        // HE or HV Badge Indicator
+        if (shiftData && shiftData.extraType === 'HE') {
+          dayHeaderHtml += `<span class="bg-rose-600 text-white text-[9px] font-black px-1 py-0.2 rounded uppercase tracking-tighter" title="Horas Extras (HE)">HE</span>`;
+        } else if (shiftData && shiftData.extraType === 'HV') {
+          dayHeaderHtml += `<span class="bg-purple-600 text-white text-[9px] font-black px-1 py-0.2 rounded uppercase tracking-tighter" title="Horas Voluntarias (HV)">HV</span>`;
+        }
+        
+        dayHeaderHtml += `</div>`;
+
+        // Shift Badge Content
+        let badgeHtml = '';
+        if (shiftData && shiftData.code) {
+          const shiftInfo = SHIFT_TYPES[shiftData.code] || { name: shiftData.code, hours: shiftData.hours || 0, badgeBg: '#475569', textColor: '#ffffff' };
+          const hoursVal = shiftData.hours !== undefined ? shiftData.hours : shiftInfo.hours;
+          
+          monthlyTotalHours += hoursVal;
+          if (shiftData.code === 'V') {
+            monthlyVacationDays++;
+          } else {
+            monthlyWorkedDays++;
+          }
+
+          let displayBadgeBg = shiftInfo.badgeBg;
+          let codePrefix = '';
+
+          if (shiftData.extraType === 'HE') {
+            monthlyExtraHoursHE += hoursVal;
+            displayBadgeBg = '#dc2626'; // Red for HE
+            codePrefix = 'HE ';
+          } else if (shiftData.extraType === 'HV') {
+            monthlyExtraHoursHV += hoursVal;
+            displayBadgeBg = '#7c3aed'; // Purple/Violet for HV
+            codePrefix = 'HV ';
+          }
+
+          badgeHtml = `
+            <div class="mt-1 w-full rounded-md px-1 py-1 text-center font-bold text-xs shadow-sm flex flex-col items-center justify-center transition group-hover:scale-105" 
+                 style="background-color: ${displayBadgeBg}; color: #ffffff;">
+              <span class="tracking-wide text-xs sm:text-sm font-bold">${codePrefix}${shiftData.code}</span>
+              ${hoursVal > 0 ? `<span class="text-[9px] font-normal opacity-90">${hoursVal.toString().replace('.', ',')}h</span>` : ''}
+            </div>
+          `;
+          
+          if (shiftData.notes) {
+            badgeHtml += `<p class="text-[9px] text-slate-500 truncate mt-0.5 px-0.5" title="${shiftData.notes}">${shiftData.notes}</p>`;
+          }
+        }
+
+        dayCell.innerHTML = dayHeaderHtml + badgeHtml;
+        grid.appendChild(dayCell);
+      }
+
+      const totalCells = startDayOfWeek + numDays;
+      const remainingCells = (7 - (totalCells % 7)) % 7;
+      for (let i = 0; i < remainingCells; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'bg-slate-50/60 min-h-[90px] sm:min-h-[110px] p-1.5 opacity-40';
+        grid.appendChild(emptyCell);
+      }
+
+      // Update Summary Statistics
+      document.getElementById('statTotalHours').textContent = `${monthlyTotalHours.toFixed(2).replace('.', ',')} h`;
+      document.getElementById('statWorkedDays').textContent = `${monthlyWorkedDays} d`;
+      document.getElementById('statVacationDays').textContent = `${monthlyVacationDays} d`;
+      document.getElementById('statExtraHoursHE').textContent = `${monthlyExtraHoursHE.toFixed(2).replace('.', ',')} h`;
+      document.getElementById('statExtraHoursHV').textContent = `${monthlyExtraHoursHV.toFixed(2).replace('.', ',')} h`;
+    }
+
+    /* DAY SHIFT EDIT MODAL */
+    function openEditModal(dateKey, dayNumber) {
+      selectedDayForEdit = dateKey;
+      const existing = calendarShifts[dateKey] || {};
+
+      document.getElementById('editModalTitle').textContent = `Día ${dayNumber} de ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      document.getElementById('customShiftCode').value = existing.code || '';
+      document.getElementById('customShiftHours').value = existing.hours !== undefined ? existing.hours : '';
+      document.getElementById('shiftNotes').value = existing.notes || '';
+
+      // Set category radio (Normal, HE, HV)
+      const currentCategory = existing.extraType || (existing.isExtra ? 'HE' : 'none');
+      if (currentCategory === 'HE') {
+        document.getElementById('catHE').checked = true;
+      } else if (currentCategory === 'HV') {
+        document.getElementById('catHV').checked = true;
+      } else {
+        document.getElementById('catNormal').checked = true;
+      }
+
+      // Build quick selection buttons
+      const grid = document.getElementById('shiftButtonsGrid');
+      grid.innerHTML = '';
+
+      const quickKeys = ['Mc', 'Tc', 'ML', 'TL', 'N', 'iN', 'iML', 'V', 'MFCO2'];
+      quickKeys.forEach(code => {
+        const info = SHIFT_TYPES[code] || { badgeBg: '#475569', hours: 7.795 };
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-2 py-2 rounded-lg font-bold text-xs text-white shadow-sm flex flex-col items-center justify-center border border-black/10 transition hover:brightness-110 active:scale-95';
+        btn.style.backgroundColor = info.badgeBg;
+        btn.innerHTML = `<span>${code}</span><span class="text-[9px] font-normal opacity-90">${info.hours}h</span>`;
+        btn.onclick = () => {
+          document.getElementById('customShiftCode').value = code;
+          document.getElementById('customShiftHours').value = info.hours;
+        };
+        grid.appendChild(btn);
+      });
+
+      document.getElementById('modalEditDay').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('modalEditDay').classList.add('hidden');
+    }
+
+    function saveDayShift() {
+      if (!selectedDayForEdit) return;
+
+      const code = document.getElementById('customShiftCode').value.trim();
+      const hoursInput = document.getElementById('customShiftHours').value;
+      const notes = document.getElementById('shiftNotes').value.trim();
+      
+      const categoryRadios = document.getElementsByName('shiftCategory');
+      let extraType = 'none';
+      for (const r of categoryRadios) {
+        if (r.checked) {
+          extraType = r.value;
+          break;
+        }
+      }
+
+      if (!code) {
+        delete calendarShifts[selectedDayForEdit];
+      } else {
+        let hours = parseFloat(hoursInput);
+        if (isNaN(hours)) {
+          hours = SHIFT_TYPES[code] ? SHIFT_TYPES[code].hours : 0;
+        }
+        calendarShifts[selectedDayForEdit] = { code, hours, extraType, notes };
+      }
+
+      saveData();
+      renderCalendar();
+      closeEditModal();
+    }
+
+    function clearCurrentDayShift() {
+      if (selectedDayForEdit && calendarShifts[selectedDayForEdit]) {
+        delete calendarShifts[selectedDayForEdit];
+        saveData();
+        renderCalendar();
+      }
+      closeEditModal();
+    }
+
+    /* AI CALENDAR IMAGE SCANNER LOGIC (GEMINI VISION) */
+    let selectedImageBase64 = null;
+    let selectedFileMime = null;
+
+    function openScannerModal() {
+      selectedImageBase64 = null;
+      selectedFileMime = null;
+      tempScannedData = null;
+      document.getElementById('imageFileInput').value = '';
+      document.getElementById('uploadPrompt').classList.remove('hidden');
+      document.getElementById('imagePreviewContainer').classList.add('hidden');
+      document.getElementById('aiLoading').classList.add('hidden');
+      document.getElementById('scanResultContainer').classList.add('hidden');
+      document.getElementById('scanMessage').classList.add('hidden');
+      document.getElementById('btnStartScan').disabled = true;
+      document.getElementById('btnStartScan').classList.remove('hidden');
+      document.getElementById('btnApplyScan').classList.add('hidden');
+
+      document.getElementById('modalScanner').classList.remove('hidden');
+    }
+
+    function closeScannerModal() {
+      document.getElementById('modalScanner').classList.add('hidden');
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      selectedFileMime = file.type || 'image/png';
+      document.getElementById('fileNameText').textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const fullBase64 = e.target.result;
+        selectedImageBase64 = fullBase64.split(',')[1];
+        
+        document.getElementById('imagePreview').src = fullBase64;
+        document.getElementById('uploadPrompt').classList.add('hidden');
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        document.getElementById('btnStartScan').disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImageWithGemini() {
+      if (!selectedImageBase64) return;
+
+      document.getElementById('aiLoading').classList.remove('hidden');
+      document.getElementById('scanMessage').classList.add('hidden');
+      document.getElementById('btnStartScan').disabled = true;
+
+      const prompt = `Analiza esta imagen de un calendario mensual de turnos de trabajo.
+Extrae todos los días visibles que tienen un turno asignado.
+Identifica los códigos de turno (ejemplos: Mc, Tc, ML, TL, N, iN, iMc, iML, iTL, V para Vacaciones, HEN para horas extras noche/voluntarias).
+Informa si la entrada es de tipo "none" (normal), "HE" (Horas extras) o "HV" (Horas voluntarias). Por ejemplo, HEN o resaltados en rojo suelen ser HE.
+Retorna un objeto JSON con el año (si no es explícito usa 2026), el número de mes (1 a 12), el nombre del mes en español y la lista de turnos por día.`;
+
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: selectedFileMime,
+                  data: selectedImageBase64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              year: { type: "INTEGER" },
+              month: { type: "INTEGER" },
+              monthName: { type: "STRING" },
+              shifts: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    day: { type: "INTEGER" },
+                    code: { type: "STRING" },
+                    extraType: { type: "STRING", description: "Valores: 'none', 'HE', o 'HV'" },
+                    notes: { type: "STRING" }
+                  },
+                  required: ["day", "code"]
+                }
+              }
+            },
+            required: ["year", "month", "shifts"]
+          }
+        }
+      };
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        document.getElementById('aiLoading').classList.add('hidden');
+
+        if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+          const jsonText = result.candidates[0].content.parts[0].text;
+          tempScannedData = JSON.parse(jsonText);
+          displayScanResults(tempScannedData);
+        } else {
+          showScanError("No se pudo interpretar la imagen del calendario. Por favor intenta con una foto más nítida.");
+        }
+      } catch (err) {
+        console.error("Gemini Vision Error:", err);
+        document.getElementById('aiLoading').classList.add('hidden');
+        showScanError("Error al escanear la imagen: " + err.message);
+      }
+    }
+
+    function showScanError(msg) {
+      const msgBox = document.getElementById('scanMessage');
+      msgBox.textContent = msg;
+      msgBox.className = "p-3 rounded-lg text-xs font-medium bg-red-100 text-red-800";
+      msgBox.classList.remove('hidden');
+      document.getElementById('btnStartScan').disabled = false;
+    }
+
+    function displayScanResults(data) {
+      document.getElementById('scanDetectedMonth').textContent = `Mes: ${data.monthName || data.month} / ${data.year}`;
+      document.getElementById('scanCountBadge').textContent = `${data.shifts.length} turnos detectados`;
+
+      const tbody = document.getElementById('scanResultsBody');
+      tbody.innerHTML = '';
+
+      data.shifts.forEach(s => {
+        const tr = document.createElement('tr');
+        const info = SHIFT_TYPES[s.code] || { name: 'Personalizado', hours: 7.795, badgeBg: '#64748b' };
+        const eType = s.extraType || 'none';
+        
+        let typeBadge = '<span class="text-slate-500 font-medium">Normal</span>';
+        if (eType === 'HE') typeBadge = '<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">HE Extra</span>';
+        if (eType === 'HV') typeBadge = '<span class="bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">HV Voluntaria</span>';
+
+        tr.innerHTML = `
+          <td class="p-2 font-bold">Día ${s.day}</td>
+          <td class="p-2">
+            <span class="px-2 py-0.5 rounded font-bold text-white text-[11px]" style="background-color: ${s.extraType === 'HE' ? '#dc2626' : (s.extraType === 'HV' ? '#7c3aed' : info.badgeBg)}">
+              ${s.extraType === 'HE' ? 'HE ' : (s.extraType === 'HV' ? 'HV ' : '')}${s.code}
+            </span>
+          </td>
+          <td class="p-2 text-slate-600">${info.name} (${info.hours}h)</td>
+          <td class="p-2">${typeBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('scanResultContainer').classList.remove('hidden');
+      document.getElementById('btnStartScan').classList.add('hidden');
+      document.getElementById('btnApplyScan').classList.remove('hidden');
+    }
+
+    function applyScannedShifts() {
+      if (!tempScannedData || !tempScannedData.shifts) return;
+
+      const year = tempScannedData.year || 2026;
+      const monthIdx = (tempScannedData.month - 1);
+
+      currentDate = new Date(year, monthIdx, 1);
+
+      tempScannedData.shifts.forEach(s => {
+        const dateKey = formatDateKey(year, monthIdx, s.day);
+        const code = s.code.trim();
+        const info = SHIFT_TYPES[code] || { hours: 7.795 };
+        const extraType = s.extraType || (code === 'HEN' ? 'HE' : 'none');
+        
+        calendarShifts[dateKey] = {
+          code: code,
+          hours: info.hours,
+          extraType: extraType,
+          notes: s.notes || ''
+        };
+      });
+
+      saveData();
+      renderCalendar();
+      closeScannerModal();
+    }
+
+    /* CATALOG MODAL LOGIC */
+    function openCatalogModal() {
+      const tbody = document.getElementById('catalogTableBody');
+      tbody.innerHTML = '';
+
+      Object.keys(SHIFT_TYPES).forEach(code => {
+        const s = SHIFT_TYPES[code];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3">
+            <span class="px-2.5 py-1 rounded font-bold text-xs text-white shadow-sm inline-block" style="background-color: ${s.badgeBg}">
+              ${code}
+            </span>
+          </td>
+          <td class="p-3 font-mono font-bold text-slate-800">${code}</td>
+          <td class="p-3 text-slate-600 font-medium">${s.name}</td>
+          <td class="p-3 text-right font-bold text-slate-900">${s.hours.toString().replace('.', ',')} h</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('modalCatalog').classList.remove('hidden');
+    }
+
+    function closeCatalogModal() {
+      document.getElementById('modalCatalog').classList.add('hidden');
+    }
+
+    /* EXPORT & IMPORT MODAL METHODS */
+    function openExportModal() {
+      document.getElementById('modalExport').classList.remove('hidden');
+    }
+
+    function closeExportModal() {
+      document.getElementById('modalExport').classList.add('hidden');
+    }
+
+    // JSON Export (Full Backup)
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(calendarShifts, null, 2));
+      downloadFile(dataStr, `turnero_backup_${new Date().toISOString().split('T')[0]}.json`);
+    }
+
+    // CSV Export (Excel compatible)
+    function exportDataCSV() {
+      let csvContent = "\uFEFFFecha;Dia;Codigo_Turno;Modalidad;Horas;Notas\n";
+      const sortedKeys = Object.keys(calendarShifts).sort();
+
+      sortedKeys.forEach(dateStr => {
+        const item = calendarShifts[dateStr];
+        const dateObj = new Date(dateStr);
+        const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'short' });
+        const cat = item.extraType === 'HE' ? 'Hora Extra (HE)' : (item.extraType === 'HV' ? 'Hora Voluntaria (HV)' : 'Normal');
+        const codeWithPrefix = item.extraType === 'HE' ? `HE ${item.code}` : (item.extraType === 'HV' ? `HV ${item.code}` : item.code);
+
+        csvContent += `${dateStr};${dayName};${codeWithPrefix};${cat};${item.hours.toString().replace('.', ',')};"${item.notes || ''}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, `turnero_export_${new Date().toISOString().split('T')[0]}.csv`);
+    }
+
+    // ICS / iCalendar Export
+    function exportDataICS() {
+      let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//TurneroPro//ES\nCALSCALE:GREGORIAN\n";
+      const sortedKeys = Object.keys(calendarShifts).sort();
+
+      sortedKeys.forEach(dateStr => {
+        const item = calendarShifts[dateStr];
+        const dateFormatted = dateStr.replace(/-/g, '');
+        const prefix = item.extraType === 'HE' ? 'HE ' : (item.extraType === 'HV' ? 'HV ' : '');
+        const summary = `${prefix}${item.code} (${item.hours}h)`;
+
+        icsContent += "BEGIN:VEVENT\n";
+        icsContent += `DTSTART;VALUE=DATE:${dateFormatted}\n`;
+        icsContent += `SUMMARY:Turno: ${summary}\n`;
+        icsContent += `DESCRIPTION:Turno ${item.code} - ${item.hours} horas computables. Tipo: ${item.extraType || 'Normal'}. ${item.notes || ''}\n`;
+        icsContent += "END:VEVENT\n";
+      });
+
+      icsContent += "END:VCALENDAR";
+
+      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, `turnos_calendario.ics`);
+    }
+
+    // Import JSON File
+    function importDataJSON() {
+      const input = document.getElementById('importJsonInput');
+      if (!input.files || !input.files[0]) {
+        alert("Selecciona un archivo JSON válido para importar.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (typeof imported === 'object' && imported !== null) {
+            calendarShifts = imported;
+            saveData();
+            renderCalendar();
+            closeExportModal();
+            alert("¡Copia de seguridad restaurada con éxito!");
+          } else {
+            alert("El archivo no tiene un formato de turnero válido.");
+          }
+        } catch (err) {
+          alert("Error al leer el archivo JSON: " + err.message);
+        }
+      };
+      reader.readAsText(input.files[0]);
+    }
+
+    function downloadFile(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    /* PWA INSTALLATION PROMPT HANDLER */
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      const btn = document.getElementById('btnInstallApp');
+      if (btn) btn.classList.remove('hidden');
+    });
+
+    function triggerPWAInstall() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('btnInstallApp').classList.add('hidden');
+          }
+          deferredPwaPrompt = null;
+        });
+      } else {
+        document.getElementById('modalInstallInfo').classList.remove('hidden');
+      }
+    }
+
+    // Initialize application on load
+    window.onload = function() {
+      loadStoredData();
+      renderCalendar();
+    };
+  </script>
+</body>
+</html>
